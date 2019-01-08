@@ -9,8 +9,11 @@ Universal launcher for games, to be placed in game folder. I would say it's best
 
 **Features:**
 
-- runs as administrator
+- runs as administrator only at first launch
 - can run game executable with arguments and / or compatibility settings
+
+- can run game executable on the first cpu core, thanks to included [RunFirst.exe](https://www.activeplus.com/products/runfirst) - to be used only on some older games that don't run properly on multi-core cpus
+- if savegame folder is specified, creates a *_savegame.lnk* shortcut to it
 
 ------
 
