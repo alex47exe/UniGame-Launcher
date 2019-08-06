@@ -7,8 +7,8 @@
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UPX_Parameters=-9 --strip-relocs=0 --compress-exports=0 --compress-icons=0
 #AutoIt3Wrapper_Res_Description=UniGame Launcher
-#AutoIt3Wrapper_Res_Fileversion=1.2.0.47
-#AutoIt3Wrapper_Res_ProductVersion=1.2.0.47
+#AutoIt3Wrapper_Res_Fileversion=1.3.0.47
+#AutoIt3Wrapper_Res_ProductVersion=1.3.0.47
 #AutoIt3Wrapper_Res_LegalCopyright=2017-2019, SalFisher47
 #AutoIt3Wrapper_Res_SaveSource=n
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -20,23 +20,25 @@
 #pragma compile(InputBoxRes, true)
 #pragma compile(CompanyName, 'SalFisher47')
 #pragma compile(FileDescription, 'UniGame Launcher')
-#pragma compile(FileVersion, 1.2.0.47)
+#pragma compile(FileVersion, 1.3.0.47)
 #pragma compile(InternalName, 'UniGame Launcher')
 #pragma compile(LegalCopyright, '2017-2019, SalFisher47')
 #pragma compile(OriginalFilename, UniGame_Launcher_one.exe)
 #pragma compile(ProductName, 'UniGame Launcher')
-#pragma compile(ProductVersion, 1.2.0.47)
+#pragma compile(ProductVersion, 1.3.0.47)
 #EndRegion ;**** Pragma Compile ****
 
 ; === UniGame_Launcher_one.au3 =====================================================================================================
 ; Title .........: UniGame Launcher
-; Version .......: 1.1.0.47
+; Version .......: 1.3.0.47
 ; AutoIt Version : 3.3.14.5
 ; Language ......: English
 ; Description ...: Universal Game Launcher one
 ; Author(s) .....: SalFisher47
-; Last Modified .: January 19, 2019 - last compiled on January 19 2019
+; Last Modified .: August 9, 2019 - last compiled on August 9 2019
 ; ==================================================================================================================================
+
+#include <StringConstants.au3>
 
 Global $Env_RoamingAppData = @AppDataDir, _
 		$Env_LocalAppData = @LocalAppDataDir, _
@@ -66,6 +68,8 @@ $exe_path_only_alt = StringTrimRight($exe_path_full_alt, StringLen($exe_only_alt
 $exe_cmd_alt = IniRead($Ini, "Exe", "exe_cmd_alt", "")
 $exe_compat_alt = IniRead($Ini, "Exe", "exe_compat_alt", "")
 
+$run_next = IniRead($Ini, "Exe", "run_next", 0)
+
 $run_first = IniRead($Ini, "Exe", "run_first", 0)
 If Not FileExists(@AppDataCommonDir & "\SalFisher47\RunFirst") Then DirCreate(@AppDataCommonDir & "\SalFisher47\RunFirst")
 FileInstall("RunFirst\RunFirst.exe", @AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", 0)
@@ -94,6 +98,22 @@ Switch $ini_Savegame_dir
 		$Savegame_dir = @ScriptDir & "\" & $ini_Savegame_subdir
 EndSwitch
 
+; kill incompatible processes before starting the game
+$Ini_kill_process = IniRead($Ini, "Launcher", "end_process", "")
+$Kill_process = ""
+If $Ini_kill_process <> "" Then
+   $Kill_process = StringSplit($Ini_kill_process, ", ", $STR_ENTIRESPLIT)
+   For $i = 1 To $Kill_process[0]
+	  If ProcessExists($Kill_process[$i]) Then
+		 ProcessClose($Kill_process[$i])
+		 Sleep(50)
+	  EndIf
+   Next
+EndIf
+
+;$desktopRatio = Round(@DesktopWidth/@DesktopHeight, 2)
+
+; check if running as administrator, then execute _RunMain, _RunBefore & _RunAfter functions
 If IniRead(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "game_path", "") <> @ScriptDir Then
 	$first_launch = 1
 	IniWrite(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "game_path", " " & @ScriptDir)
@@ -125,9 +145,25 @@ Else
 	EndIf
 EndIf
 
-$desktopRatio = Round(@DesktopWidth/@DesktopHeight, 2)
+Func _RunBefore_FirstLaunch()
+	; add commands here to run before game exe at first launch
 
-_RunMain()
+EndFunc
+
+Func _RunAfter_FirstLaunch()
+	; add commands here to run after game exe at first launch
+
+EndFunc
+
+Func _RunBefore_EveryLaunch()
+	; add commands here to run before game exe at every launch, except the first one
+
+EndFunc
+
+Func _RunAfter_EveryLaunch()
+	; add commands here to run after game exe at every launch, except the first one
+
+EndFunc
 
 Func _RunMain() ; main script
 RegRead('HKCU\Software\Valve\Steam', 'SteamPath')
@@ -145,28 +181,52 @@ If $Savegame_dir <> "" Then
 EndIf
 If $first_launch == 1 Then
 	; add commands here to run before game exe at first launch
+	;_RunBefore_FirstLaunch()
 	If $run_first == 1 Then
 		If $exe_run_alt <> "" Then
-			ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full_alt & '"' & " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt, "", @SW_HIDE)
+			If $run_next <> 1 Then
+				ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full_alt & '"' & " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt, "", @SW_HIDE)
+			Else
+				ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full_alt & '"' & " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt, "", @SW_HIDE)
+				ProcessWait($exe_only_alt)
+				ProcessWaitClose($exe_only_alt)
+				Sleep(250)
+				If Not ProcessExists($exe_only) Then
+					ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
+				EndIf
+			EndIf
 		Else
 			ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
 		EndIf
 	Else
 		If $exe_run_alt <> "" Then
-			ShellExecute($exe_only_alt, " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt)
+			If $run_next <> 1 Then
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt)
+			Else
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt)
+				ProcessWait($exe_only_alt)
+				ProcessWaitClose($exe_only_alt)
+				Sleep(250)
+				If Not ProcessExists($exe_only) Then
+					ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
+				EndIf
+			EndIf
 		Else
 			ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
 		EndIf
 	EndIf
 	; add commands here to run after game exe at first launch
+	;_RunAfter_FirstLaunch()
 Else
 	; add commands here to run before game exe at every launch, except the first one
+	;_RunBefore_EveryLaunch()
 	If $run_first == 1 Then
 		ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
 	Else
 		ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
 	EndIf
 	; add commands here to run after game exe at every launch, except the first one
+	;_RunAfter_EveryLaunch()
 EndIf
 EndFunc
 
