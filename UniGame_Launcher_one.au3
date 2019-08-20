@@ -7,8 +7,8 @@
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UPX_Parameters=-9 --strip-relocs=0 --compress-exports=0 --compress-icons=0
 #AutoIt3Wrapper_Res_Description=UniGame Launcher
-#AutoIt3Wrapper_Res_Fileversion=1.3.0.47
-#AutoIt3Wrapper_Res_ProductVersion=1.3.0.47
+#AutoIt3Wrapper_Res_Fileversion=1.4.0.47
+#AutoIt3Wrapper_Res_ProductVersion=1.4.0.47
 #AutoIt3Wrapper_Res_LegalCopyright=2017-2019, SalFisher47
 #AutoIt3Wrapper_Res_SaveSource=n
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
@@ -20,22 +20,22 @@
 #pragma compile(InputBoxRes, true)
 #pragma compile(CompanyName, 'SalFisher47')
 #pragma compile(FileDescription, 'UniGame Launcher')
-#pragma compile(FileVersion, 1.3.0.47)
+#pragma compile(FileVersion, 1.4.0.47)
 #pragma compile(InternalName, 'UniGame Launcher')
 #pragma compile(LegalCopyright, '2017-2019, SalFisher47')
 #pragma compile(OriginalFilename, UniGame_Launcher_one.exe)
 #pragma compile(ProductName, 'UniGame Launcher')
-#pragma compile(ProductVersion, 1.3.0.47)
+#pragma compile(ProductVersion, 1.4.0.47)
 #EndRegion ;**** Pragma Compile ****
 
 ; === UniGame_Launcher_one.au3 =====================================================================================================
 ; Title .........: UniGame Launcher
-; Version .......: 1.3.0.47
+; Version .......: 1.4.0.47
 ; AutoIt Version : 3.3.14.5
 ; Language ......: English
 ; Description ...: Universal Game Launcher one
 ; Author(s) .....: SalFisher47
-; Last Modified .: August 9, 2019 - last compiled on August 9 2019
+; Last Modified .: August 20, 2019 - last compiled on August 20 2019
 ; ==================================================================================================================================
 
 #include <StringConstants.au3>
@@ -52,7 +52,8 @@ $ini_RunAdmin = IniRead($ini, "launcher", "run_admin", "")
 
 ; check for game path and add it to ini file in C:\ProgramData\SalFisher47\UniGame Launcher
 If Not FileExists(@AppDataCommonDir & "\SalFisher47\UniGame Launcher") Then DirCreate(@AppDataCommonDir & "\SalFisher47\UniGame Launcher")
-FileInstall("ProgramData.ini", @AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", 0)
+$Ini_ProgramData = @AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini"
+FileInstall("ProgramData.ini", $Ini_ProgramData, 0)
 
 $exe_run = IniRead($Ini, "Exe", "exe_run", "")
 $exe_path_full = @ScriptDir & "\" & $exe_run
@@ -99,7 +100,7 @@ Switch $ini_Savegame_dir
 EndSwitch
 
 ; kill incompatible processes before starting the game
-$Ini_kill_process = IniRead($Ini, "Launcher", "end_process", "")
+$Ini_kill_process = IniRead($Ini, "Exe", "end_process", "")
 $Kill_process = ""
 If $Ini_kill_process <> "" Then
    $Kill_process = StringSplit($Ini_kill_process, ", ", $STR_ENTIRESPLIT)
@@ -111,37 +112,103 @@ If $Ini_kill_process <> "" Then
    Next
 EndIf
 
+Local $sName, $sPath, $sPort, $sRule, $sDelete, $run_firewall
+
+$Ini_firewall_block_in = IniRead($Ini, "Firewall", "exe_block_inbound", "")
+$Ini_firewall_block_in_check = IniRead($Ini_ProgramData, "Firewall", "exe_block_inbound", "")
+If $Ini_firewall_block_in <> $Ini_firewall_block_in_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "exe_block_inbound", " " & $Ini_firewall_block_in)
+	$run_firewall = 1
+EndIf
+$firewall_block_in = ""
+If $Ini_firewall_block_in <> "" Then $firewall_block_in = StringSplit($Ini_firewall_block_in, ", ", $STR_ENTIRESPLIT)
+
+$Ini_firewall_block_out = IniRead($Ini, "Firewall", "exe_block_outbound", "")
+$Ini_firewall_block_out_check = IniRead($Ini_ProgramData, "Firewall", "exe_block_outbound", "")
+If $Ini_firewall_block_out <> $Ini_firewall_block_out_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "exe_block_outbound", " " & $Ini_firewall_block_out)
+	$run_firewall = 1
+EndIf
+$firewall_block_out = ""
+If $Ini_firewall_block_out <> "" Then $firewall_block_out = StringSplit($Ini_firewall_block_out, ", ", $STR_ENTIRESPLIT)
+
+$Ini_exe_block_Reset = IniRead($Ini, "Firewall", "exe_block_Reset", 0)
+$Ini_exe_block_Reset_check = IniRead($Ini_ProgramData, "Firewall", "exe_block_Reset", 0)
+If $Ini_exe_block_Reset <> $Ini_exe_block_Reset_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "exe_block_Reset", " " & $Ini_exe_block_Reset)
+	$run_firewall = 1
+EndIf
+
+$Ini_ports_open_tcp = IniRead($Ini, "Firewall", "port_open_TCP", "")
+$Ini_ports_open_tcp_check = IniRead($Ini_ProgramData, "Firewall", "port_open_TCP", "")
+If $Ini_ports_open_tcp <> $Ini_ports_open_tcp_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "port_open_TCP", " " & $Ini_ports_open_tcp)
+	$run_firewall = 1
+EndIf
+$ports_open_tcp = ""
+If $Ini_ports_open_tcp <> "" Then $ports_open_tcp = StringSplit($Ini_ports_open_tcp, ", ", $STR_ENTIRESPLIT)
+
+$Ini_ports_open_udp = IniRead($Ini, "Firewall", "port_open_UDP", "")
+$Ini_ports_open_udp_check = IniRead($Ini_ProgramData, "Firewall", "port_open_UDP", "")
+If $Ini_ports_open_udp <> $Ini_ports_open_udp_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "port_open_UDP", " " & $Ini_ports_open_udp)
+	$run_firewall = 1
+EndIf
+$ports_open_udp = ""
+If $Ini_ports_open_udp <> "" Then $ports_open_udp = StringSplit($Ini_ports_open_udp, ", ", $STR_ENTIRESPLIT)
+
+$Ini_port_open_Reset = IniRead($Ini, "Firewall", "port_open_Reset", 0)
+$Ini_port_open_Reset_check = IniRead($Ini_ProgramData, "Firewall", "port_open_Reset", 0)
+If $Ini_port_open_Reset <> $Ini_port_open_Reset_check Then
+	IniWrite($Ini_ProgramData, "Firewall", "port_open_Reset", " " & $Ini_port_open_Reset)
+	$run_firewall = 1
+EndIf
+
 ;$desktopRatio = Round(@DesktopWidth/@DesktopHeight, 2)
 
 ; check if running as administrator, then execute _RunMain, _RunBefore & _RunAfter functions
-If IniRead(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "game_path", "") <> @ScriptDir Then
+If IniRead($Ini_ProgramData, "game", "game_path", "") <> @ScriptDir Then
 	$first_launch = 1
-	IniWrite(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "game_path", " " & @ScriptDir)
-	If IniRead(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", "") <> $Savegame_dir Then
-		IniWrite(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", " " & $Savegame_dir)
+	IniWrite($Ini_ProgramData, "game", "game_path", " " & @ScriptDir)
+	If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
+		IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
 	EndIf
 	If $ini_RunAdmin == 1 Then
 		_RunAdmin()
 		Exit
 	Else
-		_RunMain()
-		Exit
+		If $run_firewall <> 1 Then
+			_RunMain()
+			Exit
+		Else
+			_RunAdmin()
+			Exit
+		EndIf
 	EndIf
 Else
 	If IsAdmin() Then
 		$first_launch = 1
-		If IniRead(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", "") <> $Savegame_dir Then
-			IniWrite(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", " " & $Savegame_dir)
+		If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
+			IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
 		EndIf
 		_RunMain()
 		Exit
 	Else
-		$first_launch = 0
-		If IniRead(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", "") <> $Savegame_dir Then
-			IniWrite(@AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini", "launcher", "savegame_path", " " & $Savegame_dir)
+		If $run_firewall <> 1 Then
+			$first_launch = 0
+			If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
+				IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
+			EndIf
+			_RunMain()
+			Exit
+		Else
+			$first_launch = 1
+			If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
+				IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
+			EndIf
+			_RunAdmin()
+			Exit
 		EndIf
-		_RunMain()
-		Exit
 	EndIf
 EndIf
 
@@ -180,6 +247,56 @@ If $Savegame_dir <> "" Then
 	FileCreateShortcut($Savegame_dir, @ScriptDir & "\_savegame.lnk")
 EndIf
 If $first_launch == 1 Then
+	If $Ini_exe_block_Reset <> 1 Then
+		If $Ini_firewall_block_in <> "" Then
+			For $i = 1 To $firewall_block_in[0]
+				_FirewallBlockExe("_Block " & "'" & StringTrimLeft($firewall_block_in[$i], StringInStr($firewall_block_in[$i], "\", 0, -1)) & "'" & " - SalFisher47", @ScriptDir & "\" & $firewall_block_in[$i], "inbound", 1)
+			Next
+		EndIf
+		If $Ini_firewall_block_out <> "" Then
+			For $i = 1 To $firewall_block_out[0]
+				_FirewallBlockExe("_Block " & "'" & StringTrimLeft($firewall_block_out[$i], StringInStr($firewall_block_out[$i], "\", 0, -1)) & "'" & " - SalFisher47", @ScriptDir & "\" & $firewall_block_out[$i], "outbound", 1)
+			Next
+		EndIf
+	Else
+		If $Ini_firewall_block_in <> "" Then
+			For $i = 1 To $firewall_block_in[0]
+				_FirewallAllowExe("_Block " & "'" & StringTrimLeft($firewall_block_in[$i], StringInStr($firewall_block_in[$i], "\", 0, -1)) & "'" & " - SalFisher47", @ScriptDir & "\" & $firewall_block_in[$i], "inbound", 1)
+			Next
+		EndIf
+		If $Ini_firewall_block_out <> "" Then
+			For $i = 1 To $firewall_block_out[0]
+				_FirewallAllowExe("_Block " & "'" & StringTrimLeft($firewall_block_out[$i], StringInStr($firewall_block_out[$i], "\", 0, -1)) & "'" & " - SalFisher47", @ScriptDir & "\" & $firewall_block_out[$i], "outbound", 1)
+			Next
+		EndIf
+	EndIf
+	If $Ini_port_open_Reset <> 1 Then
+		If $Ini_ports_open_tcp <> "" Then
+			For $i = 1 To $ports_open_tcp[0]
+				_FirewallOpenTCP("_Open TCP port " & $ports_open_tcp[$i] & " - SalFisher47", $ports_open_tcp[$i], "inbound", 1)
+				_FirewallOpenTCP("_Open TCP port " & $ports_open_tcp[$i] & " - SalFisher47", $ports_open_tcp[$i], "outbound", 1)
+			Next
+		EndIf
+		If $Ini_ports_open_udp <> "" Then
+			For $i = 1 To $ports_open_udp[0]
+				_FirewallOpenUDP("_Open UDP port " & $ports_open_udp[$i] & " - SalFisher47", $ports_open_udp[$i], "inbound", 1)
+				_FirewallOpenUDP("_Open UDP port " & $ports_open_udp[$i] & " - SalFisher47", $ports_open_udp[$i], "outbound", 1)
+			Next
+		EndIf
+	Else
+		If $Ini_ports_open_tcp <> "" Then
+			For $i = 1 To $ports_open_tcp[0]
+				_FirewallCloseTCP("_Open TCP port " & $ports_open_tcp[$i] & " - SalFisher47", $ports_open_tcp[$i], "inbound", 1)
+				_FirewallCloseTCP("_Open TCP port " & $ports_open_tcp[$i] & " - SalFisher47", $ports_open_tcp[$i], "outbound", 1)
+			Next
+		EndIf
+		If $Ini_ports_open_udp <> "" Then
+			For $i = 1 To $ports_open_udp[0]
+				_FirewallCloseUDP("_Open UDP port " & $ports_open_udp[$i] & " - SalFisher47", $ports_open_udp[$i], "inbound", 1)
+				_FirewallCloseUDP("_Open UDP port " & $ports_open_udp[$i] & " - SalFisher47", $ports_open_udp[$i], "outbound", 1)
+			Next
+		EndIf
+	EndIf
 	; add commands here to run before game exe at first launch
 	;_RunBefore_FirstLaunch()
 	If $run_first == 1 Then
@@ -240,4 +357,94 @@ Func _RunAdmin() ; run main script as admin on first launch
 	If RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", @ScriptDir & "\" & StringTrimRight(@ScriptName, 4) & ".exe") == "RUNASADMIN" Then
 		RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", @ScriptDir & "\" & StringTrimRight(@ScriptName, 4) & ".exe", "REG_SZ", "")
 	EndIf
+EndFunc
+
+Func _FirewallBlockExe($sName, $sPath, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " program = " & Chr(34) & $sPath & Chr(34) & " dir = in", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = block program = " & Chr(34) & $sPath & Chr(34) & " enable = yes", "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " program = " & Chr(34) & $sPath & Chr(34) & " dir = out", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = block program = " & Chr(34) & $sPath & Chr(34) & " enable = yes", "", @SW_HIDE)
+	EndSwitch
+EndFunc
+
+Func _FirewallAllowExe($sName, $sPath, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " program = " & Chr(34) & $sPath & Chr(34) & " dir = in", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = allow program = " & Chr(34) & $sPath & Chr(34) & " enable = yes", "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " program = " & Chr(34) & $sPath & Chr(34) & " dir = out", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow program = " & Chr(34) & $sPath & Chr(34) & " enable = yes", "", @SW_HIDE)
+	EndSwitch
+EndFunc
+
+Func _FirewallOpenTCP($sName, $sPort, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = TCP localport = " & $sPort & " dir = in", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = allow protocol = TCP localport = " & $sPort, "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = TCP localport = " & $sPort & " dir = out", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow protocol = TCP localport = " & $sPort, "", @SW_HIDE)
+	EndSwitch
+EndFunc
+
+Func _FirewallCloseTCP($sName, $sPort, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = TCP localport = " & $sPort & " dir = in", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = allow protocol = TCP localport = " & $sPort, "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = TCP localport = " & $sPort & " dir = out", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow protocol = TCP localport = " & $sPort, "", @SW_HIDE)
+	EndSwitch
+EndFunc
+
+Func _FirewallOpenUDP($sName, $sPort, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = UDP localport = " & $sPort & " dir = in", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = allow protocol = UDP localport = " & $sPort, "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = UDP localport = " & $sPort & " dir = out", "", @SW_HIDE)
+			EndIf
+			RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow protocol = UDP localport = " & $sPort, "", @SW_HIDE)
+	EndSwitch
+EndFunc
+
+Func _FirewallCloseUDP($sName, $sPort, $sRule, $sDelete)
+	Switch $sRule
+		Case "inbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = UDP localport = " & $sPort & " dir = in", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = in action = allow protocol = UDP localport = " & $sPort, "", @SW_HIDE)
+		Case "outbound"
+			If $sDelete == 1 Then
+				RunWait(@ComSpec & " /c " & "netsh advfirewall firewall delete rule name = " & Chr(34) & $sName & Chr(34) & " protocol = UDP localport = " & $sPort & " dir = out", "", @SW_HIDE)
+			EndIf
+			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow protocol = UDP localport = " & $sPort, "", @SW_HIDE)
+	EndSwitch
 EndFunc
