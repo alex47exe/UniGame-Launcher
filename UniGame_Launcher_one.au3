@@ -1,17 +1,16 @@
 #NoTrayIcon
-;#RequireAdmin
-
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_Outfile=UniGame_Launcher_one.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UPX_Parameters=-9 --strip-relocs=0 --compress-exports=0 --compress-icons=0
 #AutoIt3Wrapper_Res_Description=UniGame Launcher
-#AutoIt3Wrapper_Res_Fileversion=1.4.0.47
-#AutoIt3Wrapper_Res_ProductVersion=1.4.0.47
+#AutoIt3Wrapper_Res_Fileversion=1.4.7.47
+#AutoIt3Wrapper_Res_ProductVersion=1.4.7.47
 #AutoIt3Wrapper_Res_LegalCopyright=2017-2019, SalFisher47
-#AutoIt3Wrapper_Res_SaveSource=n
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/tl /sf /sv
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #Region ;**** Pragma Compile ****
@@ -20,25 +19,27 @@
 #pragma compile(InputBoxRes, true)
 #pragma compile(CompanyName, 'SalFisher47')
 #pragma compile(FileDescription, 'UniGame Launcher')
-#pragma compile(FileVersion, 1.4.0.47)
+#pragma compile(FileVersion, 1.4.7.47)
 #pragma compile(InternalName, 'UniGame Launcher')
 #pragma compile(LegalCopyright, '2017-2019, SalFisher47')
 #pragma compile(OriginalFilename, UniGame_Launcher_one.exe)
 #pragma compile(ProductName, 'UniGame Launcher')
-#pragma compile(ProductVersion, 1.4.0.47)
+#pragma compile(ProductVersion, 1.4.7.47)
 #EndRegion ;**** Pragma Compile ****
 
 ; === UniGame_Launcher_one.au3 =====================================================================================================
 ; Title .........: UniGame Launcher
-; Version .......: 1.4.0.47
+; Version .......: 1.4.7.47
 ; AutoIt Version : 3.3.14.5
 ; Language ......: English
 ; Description ...: Universal Game Launcher one
 ; Author(s) .....: SalFisher47
-; Last Modified .: August 20, 2019 - last compiled on August 20 2019
+; Last Modified .: August 31, 2019 - last compiled on August 31, 2019
 ; ==================================================================================================================================
 
+#include <ProcessConstants.au3>
 #include <StringConstants.au3>
+#include <WinAPI.au3>
 
 Global $Env_RoamingAppData = @AppDataDir, _
 		$Env_LocalAppData = @LocalAppDataDir, _
@@ -60,6 +61,13 @@ $exe_path_full = @ScriptDir & "\" & $exe_run
 $exe_only = StringTrimLeft($exe_path_full, StringInStr($exe_path_full, "\", 0, -1))
 $exe_path_only = StringTrimRight($exe_path_full, StringLen($exe_only)+1)
 $exe_cmd = IniRead($Ini, "Exe", "exe_cmd", "")
+If $exe_cmd <> "" Then
+	If $CmdLineRaw <> "" Then
+		If $CmdLineRaw <> $exe_cmd Then
+			$exe_cmd = $exe_cmd & " " & $CmdLineRaw
+		EndIf
+	EndIf
+EndIf
 $exe_compat = IniRead($Ini, "Exe", "exe_compat", "")
 
 $exe_run_alt = IniRead($Ini, "Exe", "exe_run_alt", "")
@@ -67,14 +75,42 @@ $exe_path_full_alt = @ScriptDir & "\" & $exe_run_alt
 $exe_only_alt = StringTrimLeft($exe_path_full_alt, StringInStr($exe_path_full_alt, "\", 0, -1))
 $exe_path_only_alt = StringTrimRight($exe_path_full_alt, StringLen($exe_only_alt)+1)
 $exe_cmd_alt = IniRead($Ini, "Exe", "exe_cmd_alt", "")
+If $exe_cmd_alt <> "" Then
+	If $CmdLineRaw <> "" Then
+		If $CmdLineRaw <> $exe_cmd_alt Then
+			$exe_cmd_alt = $exe_cmd_alt & " " & $CmdLineRaw
+		EndIf
+	EndIf
+EndIf
 $exe_compat_alt = IniRead($Ini, "Exe", "exe_compat_alt", "")
 
 $run_next = IniRead($Ini, "Exe", "run_next", 0)
 
-$run_first = IniRead($Ini, "Exe", "run_first", 0)
-If Not FileExists(@AppDataCommonDir & "\SalFisher47\RunFirst") Then DirCreate(@AppDataCommonDir & "\SalFisher47\RunFirst")
-FileInstall("RunFirst\RunFirst.exe", @AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", 0)
-FileInstall("RunFirst\RunFirst.txt", @AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.txt", 0)
+; convert cpu affinity mask from binary to hexadecimal
+$affinity_mask_bin = IniRead($Ini, "process", "affinity_mask", "")
+If $affinity_mask_bin <> "" Then
+	$affinity_mask_dec = _Bin2Dec($affinity_mask_bin)
+	$affinity_mask_hex = Hex($affinity_mask_dec)
+	For $i = 1 To StringLen($affinity_mask_hex)
+		If StringLeft($affinity_mask_hex, 1) == 0 Then
+			$affinity_mask_hex = StringTrimLeft($affinity_mask_hex, 1)
+		EndIf
+	Next
+	$affinity_mask_hex = "0x" & $affinity_mask_hex
+EndIf
+
+; real game exe
+$exeR = IniRead($Ini, "process", "exe_real", "")
+If $exeR == "" Then
+	$exeR = $exe_run
+	$exeR_path_full = $exe_path_full
+	$exeR_only = $exe_only
+	$exeR_path_only = $exe_path_only
+Else
+	$exeR_path_full = @ScriptDir & "\" & $exeR
+	$exeR_only = StringTrimLeft($exeR_path_full, StringInStr($exeR_path_full, "\", 0, -1))
+	$exeR_path_only = StringTrimRight($exeR_path_full, StringLen($exeR_only)+1)
+EndIf
 
 ; check for savegame path and add it to ini file in C:\ProgramData\SalFisher47\UniGame Launcher
 $ini_Savegame_dir = IniRead($ini, "savegame", "savegame_dir", "")
@@ -100,7 +136,7 @@ Switch $ini_Savegame_dir
 EndSwitch
 
 ; kill incompatible processes before starting the game
-$Ini_kill_process = IniRead($Ini, "Exe", "end_process", "")
+$Ini_kill_process = IniRead($Ini, "process", "end_process", "")
 $Kill_process = ""
 If $Ini_kill_process <> "" Then
    $Kill_process = StringSplit($Ini_kill_process, ", ", $STR_ENTIRESPLIT)
@@ -112,7 +148,8 @@ If $Ini_kill_process <> "" Then
    Next
 EndIf
 
-Local $sName, $sPath, $sPort, $sRule, $sDelete, $run_firewall
+; intialize some variables and read fireall settings
+Local $sName, $sPath, $sPort, $sRule, $sDelete, $sBin, $run_firewall
 
 $Ini_firewall_block_in = IniRead($Ini, "Firewall", "exe_block_inbound", "")
 $Ini_firewall_block_in_check = IniRead($Ini_ProgramData, "Firewall", "exe_block_inbound", "")
@@ -164,7 +201,7 @@ If $Ini_port_open_Reset <> $Ini_port_open_Reset_check Then
 	$run_firewall = 1
 EndIf
 
-;$desktopRatio = Round(@DesktopWidth/@DesktopHeight, 2)
+;$desktopRatio = Round(@DesktopWidth/@DesktopHeight, 2) --- not used now
 
 ; check if running as administrator, then execute _RunMain, _RunBefore & _RunAfter functions
 If IniRead($Ini_ProgramData, "game", "game_path", "") <> @ScriptDir Then
@@ -299,37 +336,45 @@ If $first_launch == 1 Then
 	EndIf
 	; add commands here to run before game exe at first launch
 	;_RunBefore_FirstLaunch()
-	If $run_first == 1 Then
+	If $affinity_mask_bin <> "" Then
 		If $exe_run_alt <> "" Then
 			If $run_next <> 1 Then
-				ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full_alt & '"' & " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt, "", @SW_HIDE)
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt, $exe_path_only_alt)
+				$pid = ProcessWait($exe_only_alt)
+				_WinAPI_SetProcessAffinityMask(_WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION+$PROCESS_SET_INFORMATION, False, $pid), $affinity_mask_hex)
 			Else
-				ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full_alt & '"' & " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt, "", @SW_HIDE)
-				ProcessWait($exe_only_alt)
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt, $exe_path_only_alt)
+				$pid = ProcessWait($exe_only_alt)
+				_WinAPI_SetProcessAffinityMask(_WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION+$PROCESS_SET_INFORMATION, False, $pid), $affinity_mask_hex)
+				;ProcessWait($exe_only_alt) --- not used now
 				ProcessWaitClose($exe_only_alt)
 				Sleep(250)
 				If Not ProcessExists($exe_only) Then
-					ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
+					ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
+					$pid = ProcessWait($exeR_only)
+					_WinAPI_SetProcessAffinityMask(_WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION+$PROCESS_SET_INFORMATION, False, $pid), $affinity_mask_hex)
 				EndIf
 			EndIf
 		Else
-			ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
+			ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
+			$pid = ProcessWait($exeR_only)
+			_WinAPI_SetProcessAffinityMask(_WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION+$PROCESS_SET_INFORMATION, False, $pid), $affinity_mask_hex)
 		EndIf
 	Else
 		If $exe_run_alt <> "" Then
 			If $run_next <> 1 Then
-				ShellExecute($exe_only_alt, " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt)
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt, $exe_path_only_alt)
 			Else
-				ShellExecute($exe_only_alt, " " & $exe_cmd_alt & " " & $CmdLineRaw, $exe_path_only_alt)
+				ShellExecute($exe_only_alt, " " & $exe_cmd_alt, $exe_path_only_alt)
 				ProcessWait($exe_only_alt)
 				ProcessWaitClose($exe_only_alt)
 				Sleep(250)
 				If Not ProcessExists($exe_only) Then
-					ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
+					ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
 				EndIf
 			EndIf
 		Else
-			ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
+			ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
 		EndIf
 	EndIf
 	; add commands here to run after game exe at first launch
@@ -337,10 +382,12 @@ If $first_launch == 1 Then
 Else
 	; add commands here to run before game exe at every launch, except the first one
 	;_RunBefore_EveryLaunch()
-	If $run_first == 1 Then
-		ShellExecute(@AppDataCommonDir & "\SalFisher47\RunFirst\RunFirst.exe", '"' & $exe_path_full & '"' & " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only, "", @SW_HIDE)
+	If $affinity_mask_bin <> "" Then
+		ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
+		$pid = ProcessWait($exeR_only)
+		_WinAPI_SetProcessAffinityMask(_WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION+$PROCESS_SET_INFORMATION, False, $pid), $affinity_mask_hex)
 	Else
-		ShellExecute($exe_only, " " & $exe_cmd & " " & $CmdLineRaw, $exe_path_only)
+		ShellExecute($exe_only, " " & $exe_cmd, $exe_path_only)
 	EndIf
 	; add commands here to run after game exe at every launch, except the first one
 	;_RunAfter_EveryLaunch()
@@ -448,3 +495,11 @@ Func _FirewallCloseUDP($sName, $sPort, $sRule, $sDelete)
 			;RunWait(@ComSpec & " /c " & "netsh advfirewall firewall add rule name = " & Chr(34) & $sName & Chr(34) & " dir = out action = allow protocol = UDP localport = " & $sPort, "", @SW_HIDE)
 	EndSwitch
 EndFunc
+
+Func _Bin2Dec($sBin)
+    Return BitOr((StringLen($sBin) > 1 ? BitShift(_Bin2Dec(StringTrimRight($sBin, 1)), -1) : 0), StringRight($sBin, 1))
+EndFunc ; https://www.autoitscript.com/forum/topic/163035-dec2bin-bin2dec/
+
+Func _Dec2Bin($sBin)
+    Return (BitShift($sBin, 1) ? _Dec2Bin(BitShift($sBin, 1)) : "") & BitAnd($sBin, 1)
+EndFunc ; https://www.autoitscript.com/forum/topic/163035-dec2bin-bin2dec/
