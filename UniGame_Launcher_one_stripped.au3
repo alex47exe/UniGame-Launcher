@@ -1,18 +1,206 @@
 #NoTrayIcon
-#pragma compile(AutoItExecuteAllowed, true)
-#pragma compile(Compression, 9)
-#pragma compile(InputBoxRes, true)
-#pragma compile(CompanyName, 'SalFisher47')
-#pragma compile(FileDescription, 'UniGame Launcher')
-#pragma compile(FileVersion, 1.4.7.47)
-#pragma compile(InternalName, 'UniGame Launcher')
-#pragma compile(LegalCopyright, '2017-2019, SalFisher47')
-#pragma compile(OriginalFilename, UniGame_Launcher_one.exe)
+#pragma compile(Console, False)
+#pragma compile(x64, False)
+#pragma compile(ExecLevel, AsInvoker)
+#pragma compile(Compatibility, vista, win7, win8, win81, win10)
+#pragma compile(AutoItExecuteAllowed, True)
+#pragma compile(InputBoxRes, True)
+#pragma compile(Stripper, True)
+#pragma compile(FileVersion, 1.5.0.47)
+#pragma compile(ProductVersion, 1.5.0.47)
 #pragma compile(ProductName, 'UniGame Launcher')
-#pragma compile(ProductVersion, 1.4.7.47)
-Global Const $PROCESS_SET_INFORMATION = 0x00000200
-Global Const $PROCESS_QUERY_INFORMATION = 0x00000400
+#pragma compile(FileDescription, 'UniGame Launcher')
+#pragma compile(LegalCopyright, '2017-2020, SalFisher47')
+#pragma compile(CompanyName, 'SalFisher47')
+#pragma compile(InternalName, 'UniGame Launcher')
+#pragma compile(OriginalFilename, UniGame_Launcher_one.exe)
+Global Const $UBOUND_DIMENSIONS = 0
+Global Const $UBOUND_ROWS = 1
+Global Const $UBOUND_COLUMNS = 2
 Global Const $STR_ENTIRESPLIT = 1
+Global Const $STR_NOCOUNT = 2
+Global Const $_ARRAYCONSTANT_SORTINFOSIZE = 11
+Global $__g_aArrayDisplay_SortInfo[$_ARRAYCONSTANT_SORTINFOSIZE]
+Global Const $_ARRAYCONSTANT_tagLVITEM = "struct;uint Mask;int Item;int SubItem;uint State;uint StateMask;ptr Text;int TextMax;int Image;lparam Param;" & "int Indent;int GroupID;uint Columns;ptr pColumns;ptr piColFmt;int iGroup;endstruct"
+#Au3Stripper_Ignore_Funcs=__ArrayDisplay_SortCallBack
+Func __ArrayDisplay_SortCallBack($nItem1, $nItem2, $hWnd)
+If $__g_aArrayDisplay_SortInfo[3] = $__g_aArrayDisplay_SortInfo[4] Then
+If Not $__g_aArrayDisplay_SortInfo[7] Then
+$__g_aArrayDisplay_SortInfo[5] *= -1
+$__g_aArrayDisplay_SortInfo[7] = 1
+EndIf
+Else
+$__g_aArrayDisplay_SortInfo[7] = 1
+EndIf
+$__g_aArrayDisplay_SortInfo[6] = $__g_aArrayDisplay_SortInfo[3]
+Local $sVal1 = __ArrayDisplay_GetItemText($hWnd, $nItem1, $__g_aArrayDisplay_SortInfo[3])
+Local $sVal2 = __ArrayDisplay_GetItemText($hWnd, $nItem2, $__g_aArrayDisplay_SortInfo[3])
+If $__g_aArrayDisplay_SortInfo[8] = 1 Then
+If(StringIsFloat($sVal1) Or StringIsInt($sVal1)) Then $sVal1 = Number($sVal1)
+If(StringIsFloat($sVal2) Or StringIsInt($sVal2)) Then $sVal2 = Number($sVal2)
+EndIf
+Local $nResult
+If $__g_aArrayDisplay_SortInfo[8] < 2 Then
+$nResult = 0
+If $sVal1 < $sVal2 Then
+$nResult = -1
+ElseIf $sVal1 > $sVal2 Then
+$nResult = 1
+EndIf
+Else
+$nResult = DllCall('shlwapi.dll', 'int', 'StrCmpLogicalW', 'wstr', $sVal1, 'wstr', $sVal2)[0]
+EndIf
+$nResult = $nResult * $__g_aArrayDisplay_SortInfo[5]
+Return $nResult
+EndFunc
+Func __ArrayDisplay_GetItemText($hWnd, $iIndex, $iSubItem = 0)
+Local $tBuffer = DllStructCreate("wchar Text[4096]")
+Local $pBuffer = DllStructGetPtr($tBuffer)
+Local $tItem = DllStructCreate($_ARRAYCONSTANT_tagLVITEM)
+DllStructSetData($tItem, "SubItem", $iSubItem)
+DllStructSetData($tItem, "TextMax", 4096)
+DllStructSetData($tItem, "Text", $pBuffer)
+If IsHWnd($hWnd) Then
+DllCall("user32.dll", "lresult", "SendMessageW", "hwnd", $hWnd, "uint", 0x1073, "wparam", $iIndex, "struct*", $tItem)
+Else
+Local $pItem = DllStructGetPtr($tItem)
+GUICtrlSendMsg($hWnd, 0x1073, $iIndex, $pItem)
+EndIf
+Return DllStructGetData($tBuffer, "Text")
+EndFunc
+Global Enum $ARRAYFILL_FORCE_DEFAULT, $ARRAYFILL_FORCE_SINGLEITEM, $ARRAYFILL_FORCE_INT, $ARRAYFILL_FORCE_NUMBER, $ARRAYFILL_FORCE_PTR, $ARRAYFILL_FORCE_HWND, $ARRAYFILL_FORCE_STRING, $ARRAYFILL_FORCE_BOOLEAN
+Func _ArrayAdd(ByRef $aArray, $vValue, $iStart = 0, $sDelim_Item = "|", $sDelim_Row = @CRLF, $iForce = $ARRAYFILL_FORCE_DEFAULT)
+If $iStart = Default Then $iStart = 0
+If $sDelim_Item = Default Then $sDelim_Item = "|"
+If $sDelim_Row = Default Then $sDelim_Row = @CRLF
+If $iForce = Default Then $iForce = $ARRAYFILL_FORCE_DEFAULT
+If Not IsArray($aArray) Then Return SetError(1, 0, -1)
+Local $iDim_1 = UBound($aArray, $UBOUND_ROWS)
+Local $hDataType = 0
+Switch $iForce
+Case $ARRAYFILL_FORCE_INT
+$hDataType = Int
+Case $ARRAYFILL_FORCE_NUMBER
+$hDataType = Number
+Case $ARRAYFILL_FORCE_PTR
+$hDataType = Ptr
+Case $ARRAYFILL_FORCE_HWND
+$hDataType = Hwnd
+Case $ARRAYFILL_FORCE_STRING
+$hDataType = String
+Case $ARRAYFILL_FORCE_BOOLEAN
+$hDataType = "Boolean"
+EndSwitch
+Switch UBound($aArray, $UBOUND_DIMENSIONS)
+Case 1
+If $iForce = $ARRAYFILL_FORCE_SINGLEITEM Then
+ReDim $aArray[$iDim_1 + 1]
+$aArray[$iDim_1] = $vValue
+Return $iDim_1
+EndIf
+If IsArray($vValue) Then
+If UBound($vValue, $UBOUND_DIMENSIONS) <> 1 Then Return SetError(5, 0, -1)
+$hDataType = 0
+Else
+Local $aTmp = StringSplit($vValue, $sDelim_Item, $STR_NOCOUNT + $STR_ENTIRESPLIT)
+If UBound($aTmp, $UBOUND_ROWS) = 1 Then
+$aTmp[0] = $vValue
+EndIf
+$vValue = $aTmp
+EndIf
+Local $iAdd = UBound($vValue, $UBOUND_ROWS)
+ReDim $aArray[$iDim_1 + $iAdd]
+For $i = 0 To $iAdd - 1
+If String($hDataType) = "Boolean" Then
+Switch $vValue[$i]
+Case "True", "1"
+$aArray[$iDim_1 + $i] = True
+Case "False", "0", ""
+$aArray[$iDim_1 + $i] = False
+EndSwitch
+ElseIf IsFunc($hDataType) Then
+$aArray[$iDim_1 + $i] = $hDataType($vValue[$i])
+Else
+$aArray[$iDim_1 + $i] = $vValue[$i]
+EndIf
+Next
+Return $iDim_1 + $iAdd - 1
+Case 2
+Local $iDim_2 = UBound($aArray, $UBOUND_COLUMNS)
+If $iStart < 0 Or $iStart > $iDim_2 - 1 Then Return SetError(4, 0, -1)
+Local $iValDim_1, $iValDim_2 = 0, $iColCount
+If IsArray($vValue) Then
+If UBound($vValue, $UBOUND_DIMENSIONS) <> 2 Then Return SetError(5, 0, -1)
+$iValDim_1 = UBound($vValue, $UBOUND_ROWS)
+$iValDim_2 = UBound($vValue, $UBOUND_COLUMNS)
+$hDataType = 0
+Else
+Local $aSplit_1 = StringSplit($vValue, $sDelim_Row, $STR_NOCOUNT + $STR_ENTIRESPLIT)
+$iValDim_1 = UBound($aSplit_1, $UBOUND_ROWS)
+Local $aTmp[$iValDim_1][0], $aSplit_2
+For $i = 0 To $iValDim_1 - 1
+$aSplit_2 = StringSplit($aSplit_1[$i], $sDelim_Item, $STR_NOCOUNT + $STR_ENTIRESPLIT)
+$iColCount = UBound($aSplit_2)
+If $iColCount > $iValDim_2 Then
+$iValDim_2 = $iColCount
+ReDim $aTmp[$iValDim_1][$iValDim_2]
+EndIf
+For $j = 0 To $iColCount - 1
+$aTmp[$i][$j] = $aSplit_2[$j]
+Next
+Next
+$vValue = $aTmp
+EndIf
+If UBound($vValue, $UBOUND_COLUMNS) + $iStart > UBound($aArray, $UBOUND_COLUMNS) Then Return SetError(3, 0, -1)
+ReDim $aArray[$iDim_1 + $iValDim_1][$iDim_2]
+For $iWriteTo_Index = 0 To $iValDim_1 - 1
+For $j = 0 To $iDim_2 - 1
+If $j < $iStart Then
+$aArray[$iWriteTo_Index + $iDim_1][$j] = ""
+ElseIf $j - $iStart > $iValDim_2 - 1 Then
+$aArray[$iWriteTo_Index + $iDim_1][$j] = ""
+Else
+If String($hDataType) = "Boolean" Then
+Switch $vValue[$iWriteTo_Index][$j - $iStart]
+Case "True", "1"
+$aArray[$iWriteTo_Index + $iDim_1][$j] = True
+Case "False", "0", ""
+$aArray[$iWriteTo_Index + $iDim_1][$j] = False
+EndSwitch
+ElseIf IsFunc($hDataType) Then
+$aArray[$iWriteTo_Index + $iDim_1][$j] = $hDataType($vValue[$iWriteTo_Index][$j - $iStart])
+Else
+$aArray[$iWriteTo_Index + $iDim_1][$j] = $vValue[$iWriteTo_Index][$j - $iStart]
+EndIf
+EndIf
+Next
+Next
+Case Else
+Return SetError(2, 0, -1)
+EndSwitch
+Return UBound($aArray, $UBOUND_ROWS) - 1
+EndFunc
+Global Const $FO_READ = 0
+Global Const $FO_OVERWRITE = 2
+Func _ReplaceStringInFile($sFilePath, $sSearchString, $sReplaceString, $iCaseSensitive = 0, $iOccurance = 1)
+If StringInStr(FileGetAttrib($sFilePath), "R") Then Return SetError(1, 0, -1)
+Local $hFileOpen = FileOpen($sFilePath, $FO_READ)
+If $hFileOpen = -1 Then Return SetError(2, 0, -1)
+Local $sFileRead = FileRead($hFileOpen)
+FileClose($hFileOpen)
+If $iCaseSensitive = Default Then $iCaseSensitive = 0
+If $iOccurance = Default Then $iOccurance = 1
+$sFileRead = StringReplace($sFileRead, $sSearchString, $sReplaceString, 1 - $iOccurance, $iCaseSensitive)
+Local $iReturn = @extended
+If $iReturn Then
+Local $iFileEncoding = FileGetEncoding($sFilePath)
+$hFileOpen = FileOpen($sFilePath, $iFileEncoding + $FO_OVERWRITE)
+If $hFileOpen = -1 Then Return SetError(3, 0, -1)
+FileWrite($hFileOpen, $sFileRead)
+FileClose($hFileOpen)
+EndIf
+Return $iReturn
+EndFunc
 Global Const $SE_PRIVILEGE_ENABLED = 0x00000002
 Global Enum $SECURITYANONYMOUS = 0, $SECURITYIDENTIFICATION, $SECURITYIMPERSONATION, $SECURITYDELEGATION
 Global Const $TOKEN_QUERY = 0x00000008
@@ -130,13 +318,94 @@ Local $aResult = DllCall("kernel32.dll", "bool", "SetProcessAffinityMask", "hand
 If @error Then Return SetError(@error, @extended, False)
 Return $aResult[0]
 EndFunc
+Global Const $PROCESS_SET_INFORMATION = 0x00000200
+Global Const $PROCESS_QUERY_INFORMATION = 0x00000400
+If Not ObjEvent("AutoIt.Error") Then
+Global Const $_Zip_COMErrorHandler = ObjEvent("AutoIt.Error", "_Zip_COMErrorFunc")
+EndIf
+Func _Zip_COMErrorFunc()
+EndFunc
+Func _Zip_UnzipAll($sZipFile, $sDestPath, $iFlag = 20)
+If Not _Zip_DllChk() Then Return SetError(@error, 0, 0)
+If Not _IsFullPath($sZipFile) Or Not _IsFullPath($sDestPath) Then Return SetError(3, 0, 0)
+Local $sTempDir = _Zip_TempDirName($sZipFile)
+Local $oNS = _Zip_GetNameSpace($sZipFile)
+If Not IsObj($oNS) Then Return SetError(4, 0, 0)
+$sDestPath = _Zip_PathStripSlash($sDestPath)
+If Not FileExists($sDestPath) Then
+DirCreate($sDestPath)
+If @error Then Return SetError(5, 0, 0)
+EndIf
+Local $oNS2 = _Zip_GetNameSpace($sDestPath)
+If Not IsObj($oNS2) Then Return SetError(6, 0, 0)
+$oNS2.CopyHere($oNS.Items(), $iFlag)
+DirRemove($sTempDir, 1)
+If FileExists($sDestPath & "\" & $oNS.Items().Item($oNS.Items().Count - 1).Name) Then
+Return 1
+Else
+Return SetError(7, 0, 0)
+EndIf
+EndFunc
+Func _IsFullPath($sPath)
+If StringInStr($sPath, ":\") Then
+Return True
+Else
+Return False
+EndIf
+EndFunc
+Func _Zip_DllChk()
+If Not FileExists(@SystemDir & "\zipfldr.dll") Then Return SetError(1, 0, 0)
+If Not RegRead("HKEY_CLASSES_ROOT\CLSID\{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", "") Then Return SetError(2, 0, 0)
+Return 1
+EndFunc
+Func _Zip_GetNameSpace($sZipFile, $sPath = "")
+If Not _Zip_DllChk() Then Return SetError(@error, 0, 0)
+If Not _IsFullPath($sZipFile) Then Return SetError(3, 0, 0)
+Local $oApp = ObjCreate("Shell.Application")
+Local $oNS = $oApp.NameSpace($sZipFile)
+If Not IsObj($oNS) Then Return SetError(4, 0, 0)
+If $sPath <> "" Then
+Local $aPath = StringSplit($sPath, "\")
+Local $oItem
+For $i = 1 To $aPath[0]
+$oItem = $oNS.ParseName($aPath[$i])
+If Not IsObj($oItem) Then Return SetError(5, 0, 0)
+$oNS = $oItem.GetFolder
+If Not IsObj($oNS) Then Return SetError(6, 0, 0)
+Next
+EndIf
+Return $oNS
+EndFunc
+Func _Zip_PathNameOnly($sPath)
+Return StringRegExpReplace($sPath, ".*\\", "")
+EndFunc
+Func _Zip_PathStripSlash($sString)
+Return StringRegExpReplace($sString, "(^\\+|\\+$)", "")
+EndFunc
+Func _Zip_TempDirName($sZipFile)
+Local $i = 0, $sTemp, $sName = _Zip_PathNameOnly($sZipFile)
+Do
+$i += 1
+$sTemp = @TempDir & "\Temporary Directory " & $i & " for " & $sName
+Until Not FileExists($sTemp)
+Return $sTemp
+EndFunc
 Global $Env_RoamingAppData = @AppDataDir, $Env_LocalAppData = @LocalAppDataDir, $Env_ProgramData = @AppDataCommonDir, $Env_UserProfile = @UserProfileDir, $Env_SavedGames = RegRead("HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders", "{4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4}")
 If @error Then $Env_SavedGames = $Env_UserProfile & "\Saved Games"
+Global $7z_dir = $Env_ProgramData & "\SalFisher47\7za", $7z = $7z_dir & "\7za.exe"
 $Ini = @ScriptDir & "\" & StringTrimRight(@ScriptName, 4) & ".ini"
 $ini_RunAdmin = IniRead($ini, "launcher", "run_admin", "")
+$ini_1stRun = IniRead($ini, "launcher", "1st_run", "")
 If Not FileExists(@AppDataCommonDir & "\SalFisher47\UniGame Launcher") Then DirCreate(@AppDataCommonDir & "\SalFisher47\UniGame Launcher")
 $Ini_ProgramData = @AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini"
 FileInstall("ProgramData.ini", $Ini_ProgramData, 0)
+If $ini_1stRun == 1 Then
+If Not FileExists(@ScriptDir & "\_1st_run.zip") Then
+$first_launch = 1
+FileInstall("_1st_run.zip", @ScriptDir & "\_1st_run.zip", 0)
+FileInstall("ProgramData.ini", $Ini_ProgramData, 1)
+EndIf
+EndIf
 $exe_run = IniRead($Ini, "Exe", "exe_run", "")
 $exe_path_full = @ScriptDir & "\" & $exe_run
 $exe_only = StringTrimLeft($exe_path_full, StringInStr($exe_path_full, "\", 0, -1))
@@ -190,21 +459,21 @@ $ini_Savegame_dir = IniRead($ini, "savegame", "savegame_dir", "")
 $ini_Savegame_subdir = IniRead($ini, "savegame", "savegame_subdir", "")
 $Savegame_dir = ""
 Switch $ini_Savegame_dir
-Case "MyDocs"
+Case "_MyDocs_" Or "MyDocs"
 $Savegame_dir = @MyDocumentsDir & "\" & $ini_Savegame_subdir
-Case "PublicDocs"
+Case "_PublicDocs_" Or "PublicDocs"
 $Savegame_dir = @DocumentsCommonDir & "\" & $ini_Savegame_subdir
-Case "RoamingAppData"
+Case "_RoamingAppData_" Or "RoamingAppData"
 $Savegame_dir = $Env_RoamingAppData & "\" & $ini_Savegame_subdir
-Case "LocalAppData"
+Case "_LocalAppData_" Or "LocalAppData"
 $Savegame_dir = $Env_LocalAppData & "\" & $ini_Savegame_subdir
-Case "ProgramData"
+Case "_ProgramData_" Or "ProgramData"
 $Savegame_dir = $Env_ProgramData & "\" & $ini_Savegame_subdir
-Case "SavedGames"
+Case "_SavedGames_" Or "SavedGames"
 $Savegame_dir = $Env_SavedGames & "\" & $ini_Savegame_subdir
-Case "UserProfile"
+Case "_UserProfile_" Or "UserProfile"
 $Savegame_dir = @UserProfileDir & "\" & $ini_Savegame_subdir
-Case "GameDir"
+Case "_GameDir_" Or "GameDir"
 $Savegame_dir = @ScriptDir & "\" & $ini_Savegame_subdir
 EndSwitch
 $Ini_kill_process = IniRead($Ini, "process", "end_process", "")
@@ -288,6 +557,7 @@ If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
 IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
 EndIf
 _RunMain()
+FileDelete(StringTrimRight(@ScriptFullPath, 3) & "a3x")
 Exit
 Else
 If $run_firewall <> 1 Then
@@ -296,6 +566,7 @@ If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
 IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
 EndIf
 _RunMain()
+FileDelete(StringTrimRight(@ScriptFullPath, 3) & "a3x")
 Exit
 Else
 $first_launch = 1
@@ -303,10 +574,184 @@ If IniRead($Ini_ProgramData, "game", "savegame_path", "") <> $Savegame_dir Then
 IniWrite($Ini_ProgramData, "game", "savegame_path", " " & $Savegame_dir)
 EndIf
 _RunAdmin()
+If IsAdmin() Then FileDelete(StringTrimRight(@ScriptFullPath, 3) & "a3x")
 Exit
 EndIf
 EndIf
 EndIf
+Func _1st_run()
+_Zip_UnzipAll(@ScriptDir & "\_1st_run.zip", @ScriptDir & "\_1st_run")
+Local $ini_1stRun_copy_from[1], $ini_1stRun_copy_to[1], $ini_1stRun_open_file[1], $ini_1stRun_file_cmd[1]
+For $i = 1 To 9
+_ArrayAdd($ini_1stRun_copy_from, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "copy", "copy_from" & $i, ""))
+If $ini_1stRun_copy_from[$i] <> "" Then
+Switch StringLeft($ini_1stRun_copy_from[$i], 8)
+Case "_SaveDir"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_SaveDir_", $Savegame_dir)
+Case "_MyDocs_"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_MyDocs_", @MyDocumentsDir)
+Case "_PublicD"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_PublicDocs_", @DocumentsCommonDir )
+Case "_LocalAp"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_LocalAppData_", @LocalAppDataDir)
+Case "_Roaming"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_RoamingAppData_", @AppDataDir)
+Case "_Program"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_ProgramData_", @AppDataCommonDir)
+Case "_UserPro"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_UserProfile_", @UserProfileDir)
+Case "_SavedGa"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_SavedGames_", $Env_SavedGames)
+Case "_GameDir"
+$ini_1stRun_copy_from[$i] = StringReplace($ini_1stRun_copy_from[$i], "_GameDir_", @ScriptDir)
+Case Else
+$ini_1stRun_copy_from[$i] = @ScriptDir & "\_1st_run\" & $ini_1stRun_copy_from[$i]
+EndSwitch
+EndIf
+_ArrayAdd($ini_1stRun_copy_to, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "copy", "copy_to" & $i, ""))
+If $ini_1stRun_copy_to[$i] <> "" Then
+Switch StringLeft($ini_1stRun_copy_to[$i], 8)
+Case "_SaveDir"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_SaveDir_", $Savegame_dir)
+Case "_MyDocs_"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_MyDocs_", @MyDocumentsDir)
+Case "_PublicD"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_PublicDocs_", @DocumentsCommonDir )
+Case "_LocalAp"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_LocalAppData_", @LocalAppDataDir)
+Case "_Roaming"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_RoamingAppData_", @AppDataDir)
+Case "_Program"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_ProgramData_", @AppDataCommonDir)
+Case "_UserPro"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_UserProfile_", @UserProfileDir)
+Case "_SavedGa"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_SavedGames_", $Env_SavedGames)
+Case "_GameDir"
+$ini_1stRun_copy_to[$i] = StringReplace($ini_1stRun_copy_to[$i], "_GameDir_", @ScriptDir)
+EndSwitch
+EndIf
+If $ini_1stRun_copy_to[$i] == $Savegame_dir Then
+If DirGetSize($ini_1stRun_copy_to[$i]) <> 0 Then
+DirCopy($ini_1stRun_copy_to[$i], $ini_1stRun_copy_to[$i] & "_1st_run", 1)
+FileCreateShortcut($ini_1stRun_copy_to[$i] & "_1st_run", $ini_1stRun_copy_to[$i] & "\_1st_run.lnk")
+DirCopy($ini_1stRun_copy_from[$i], $ini_1stRun_copy_to[$i], 1)
+Else
+DirCopy($ini_1stRun_copy_from[$i], $ini_1stRun_copy_to[$i], 1)
+EndIf
+Else
+DirCopy($ini_1stRun_copy_from[$i], $ini_1stRun_copy_to[$i], 1)
+EndIf
+Next
+For $j = 1 To 9
+_ArrayAdd($ini_1stRun_open_file, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "open", "open_file" & $j, ""))
+If $ini_1stRun_open_file[$j] <> "" Then
+Switch StringLeft($ini_1stRun_open_file[$j], 8)
+Case "_SaveDir"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_SaveDir_", $Savegame_dir)
+Case "_MyDocs_"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_MyDocs_", @MyDocumentsDir)
+Case "_PublicD"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_PublicDocs_", @DocumentsCommonDir )
+Case "_LocalAp"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_LocalAppData_", @LocalAppDataDir)
+Case "_Roaming"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_RoamingAppData_", @AppDataDir)
+Case "_Program"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_ProgramData_", @AppDataCommonDir)
+Case "_UserPro"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_UserProfile_", @UserProfileDir)
+Case "_SavedGa"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_SavedGames_", $Env_SavedGames)
+Case "_GameDir"
+$ini_1stRun_open_file[$j] = StringReplace($ini_1stRun_open_file[$j], "_GameDir_", @ScriptDir)
+Case Else
+$ini_1stRun_open_file[$j] = @ScriptDir & "\_1st_run\" & $ini_1stRun_open_file[$j]
+EndSwitch
+EndIf
+_ArrayAdd($ini_1stRun_file_cmd, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "open", "file_cmd" & $j, ""))
+If $ini_1stRun_file_cmd[$j] <> "" Then
+If $CmdLineRaw <> "" Then
+If $CmdLineRaw <> $ini_1stRun_file_cmd[$j] Then
+$ini_1stRun_file_cmd[$j] = $ini_1stRun_file_cmd[$j] & " " & $CmdLineRaw
+EndIf
+EndIf
+EndIf
+$open_file_only = StringTrimLeft($ini_1stRun_open_file[$j], StringInStr($ini_1stRun_open_file[$j], "\", 0, -1))
+$open_file_path_only = StringTrimRight($ini_1stRun_open_file[$j], StringLen($open_file_only)+1)
+$open_file_extension = StringRight($open_file_only, 4)
+If $ini_1stRun_open_file[$j] <> "" Then
+Switch $open_file_extension
+Case ".au3", ".a3x"
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SaveDir_", $Savegame_dir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_MyDocs_", @MyDocumentsDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_PublicDocs_", @DocumentsCommonDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LocalAppData_", @LocalAppDataDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_RoamingAppData_", @AppDataDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_ProgramData_", @AppDataCommonDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_UserProfile_", @UserProfileDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SavedGames_", $Env_SavedGames)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_GameDir_", @ScriptDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LauncherName_", @ScriptName)
+ShellExecuteWait(@ScriptFullPath, ' /AutoIt3ExecuteScript ' & '"' & $ini_1stRun_open_file[$j] & '"', $open_file_path_only)
+Case ".bat", ".ps1"
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SaveDir_", $Savegame_dir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_MyDocs_", @MyDocumentsDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_PublicDocs_", @DocumentsCommonDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LocalAppData_", @LocalAppDataDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_RoamingAppData_", @AppDataDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_ProgramData_", @AppDataCommonDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_UserProfile_", @UserProfileDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SavedGames_", $Env_SavedGames)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_GameDir_", @ScriptDir)
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LauncherName_", @ScriptName)
+Switch $open_file_extension
+Case ".bat"
+FileInstall("_FileInstall\run_scripts\bat_script.au3", $ini_1stRun_open_file[$j] & '.au3', 1)
+Case ".ps1"
+FileInstall("_FileInstall\run_scripts\bat_script.au3", $ini_1stRun_open_file[$j] & '.au3', 1)
+If FileExists(StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat') Then
+FileCopy(StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', StringTrimRight($ini_1stRun_open_file[$j], 4) & '_1st_run.bat', 1)
+FileInstall("_FileInstall\run_scripts\ps1_script.bat", StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', 1)
+Else
+FileInstall("_FileInstall\run_scripts\ps1_script.bat", StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', 1)
+EndIf
+EndSwitch
+_ReplaceStringInFile($ini_1stRun_open_file[$j] & '.au3', "_file_path_", '"' & StringTrimRight($ini_1stRun_open_file[$j], 4) & ".bat" & '"')
+ShellExecuteWait(@AutoItExe, ' /AutoIt3ExecuteScript ' & '"' & $ini_1stRun_open_file[$j] & '.au3' & '"', @ScriptDir)
+Case ".reg"
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SaveDir_", StringReplace($Savegame_dir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_MyDocs_", StringReplace(@MyDocumentsDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_PublicDocs_", StringReplace(@DocumentsCommonDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LocalAppData_", StringReplace(@LocalAppDataDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_RoamingAppData_", StringReplace(@AppDataDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_ProgramData_", StringReplace(@AppDataCommonDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_UserProfile_", StringReplace(@UserProfileDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_SavedGames_", StringReplace($Env_SavedGames, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_GameDir_", StringReplace(@ScriptDir, "\", "\\"))
+_ReplaceStringInFile($ini_1stRun_open_file[$j], "_LauncherName_", @ScriptName)
+FileInstall("_FileInstall\run_scripts\bat_script.au3", $ini_1stRun_open_file[$j] & '.au3', 1)
+If FileExists(StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat') Then
+FileCopy(StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', StringTrimRight($ini_1stRun_open_file[$j], 4) & '_1st_run.bat', 1)
+FileInstall("_FileInstall\run_scripts\reg_script_silent.bat", StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', 1)
+Else
+FileInstall("_FileInstall\run_scripts\reg_script_silent.bat", StringTrimRight($ini_1stRun_open_file[$j], 4) & '.bat', 1)
+EndIf
+_ReplaceStringInFile($ini_1stRun_open_file[$j] & '.au3', "_file_path_", '"' & StringTrimRight($ini_1stRun_open_file[$j], 4) & ".bat" & '"')
+ShellExecuteWait(@AutoItExe, ' /AutoIt3ExecuteScript ' & '"' & $ini_1stRun_open_file[$j] & '.au3' & '"', @ScriptDir)
+Case Else
+ShellExecuteWait($open_file_only, $ini_1stRun_file_cmd[$j], $open_file_path_only)
+EndSwitch
+EndIf
+Next
+DirRemove(@ScriptDir & "\_1st_run", 1)
+For $k = 1 to 9
+If FileExists(StringTrimRight($ini_1stRun_open_file[$k], 4) & '_1st_run.bat') Then
+FileDelete(StringTrimRight($ini_1stRun_open_file[$k], 4) & '.bat')
+FileMove(StringTrimRight($ini_1stRun_open_file[$k], 4) & '_1st_run.bat', StringTrimRight($ini_1stRun_open_file[$k], 4) & '.bat', 1)
+EndIf
+Next
+EndFunc
 Func _RunMain()
 RegRead('HKCU\Software\Valve\Steam', 'SteamPath')
 If @error Then
@@ -372,6 +817,7 @@ _FirewallCloseUDP("_Open UDP port " & $ports_open_udp[$i] & " - SalFisher47", $p
 Next
 EndIf
 EndIf
+If $ini_1stRun == 1 Then _1st_run()
 If $affinity_mask_bin <> "" Then
 If $exe_run_alt <> "" Then
 If $run_next <> 1 Then
