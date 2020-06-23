@@ -6,8 +6,8 @@
 #pragma compile(AutoItExecuteAllowed, True)
 #pragma compile(InputBoxRes, True)
 #pragma compile(Stripper, True)
-#pragma compile(FileVersion, 1.5.0.47)
-#pragma compile(ProductVersion, 1.5.0.47)
+#pragma compile(FileVersion, 1.5.1.47)
+#pragma compile(ProductVersion, 1.5.1.47)
 #pragma compile(ProductName, 'UniGame Launcher')
 #pragma compile(FileDescription, 'UniGame Launcher')
 #pragma compile(LegalCopyright, '2017-2020, SalFisher47')
@@ -396,12 +396,12 @@ Global $7z_dir = $Env_ProgramData & "\SalFisher47\7za", $7z = $7z_dir & "\7za.ex
 $Ini = @ScriptDir & "\" & StringTrimRight(@ScriptName, 4) & ".ini"
 $ini_RunAdmin = IniRead($ini, "launcher", "run_admin", "")
 $ini_1stRun = IniRead($ini, "launcher", "1st_run", "")
+$_1st_run_ini = "_1st_run.ini"
 If Not FileExists(@AppDataCommonDir & "\SalFisher47\UniGame Launcher") Then DirCreate(@AppDataCommonDir & "\SalFisher47\UniGame Launcher")
 $Ini_ProgramData = @AppDataCommonDir & "\SalFisher47\UniGame Launcher\" & StringTrimRight(@ScriptName, 4) & ".ini"
 FileInstall("ProgramData.ini", $Ini_ProgramData, 0)
 If $ini_1stRun == 1 Then
 If Not FileExists(@ScriptDir & "\_1st_run.zip") Then
-$first_launch = 1
 FileInstall("_1st_run.zip", @ScriptDir & "\_1st_run.zip", 0)
 FileInstall("ProgramData.ini", $Ini_ProgramData, 1)
 EndIf
@@ -459,21 +459,37 @@ $ini_Savegame_dir = IniRead($ini, "savegame", "savegame_dir", "")
 $ini_Savegame_subdir = IniRead($ini, "savegame", "savegame_subdir", "")
 $Savegame_dir = ""
 Switch $ini_Savegame_dir
-Case "_MyDocs_" Or "MyDocs"
+Case "MyDocs"
 $Savegame_dir = @MyDocumentsDir & "\" & $ini_Savegame_subdir
-Case "_PublicDocs_" Or "PublicDocs"
+Case "_MyDocs_"
+$Savegame_dir = @MyDocumentsDir & "\" & $ini_Savegame_subdir
+Case "PublicDocs"
 $Savegame_dir = @DocumentsCommonDir & "\" & $ini_Savegame_subdir
-Case "_RoamingAppData_" Or "RoamingAppData"
+Case "_PublicDocs_"
+$Savegame_dir = @DocumentsCommonDir & "\" & $ini_Savegame_subdir
+Case "RoamingAppData"
 $Savegame_dir = $Env_RoamingAppData & "\" & $ini_Savegame_subdir
-Case "_LocalAppData_" Or "LocalAppData"
+Case "_RoamingAppData_"
+$Savegame_dir = $Env_RoamingAppData & "\" & $ini_Savegame_subdir
+Case "LocalAppData"
 $Savegame_dir = $Env_LocalAppData & "\" & $ini_Savegame_subdir
-Case "_ProgramData_" Or "ProgramData"
+Case "_LocalAppData_"
+$Savegame_dir = $Env_LocalAppData & "\" & $ini_Savegame_subdir
+Case "ProgramData"
 $Savegame_dir = $Env_ProgramData & "\" & $ini_Savegame_subdir
-Case "_SavedGames_" Or "SavedGames"
+Case "_ProgramData_"
+$Savegame_dir = $Env_ProgramData & "\" & $ini_Savegame_subdir
+Case "SavedGames"
 $Savegame_dir = $Env_SavedGames & "\" & $ini_Savegame_subdir
-Case "_UserProfile_" Or "UserProfile"
+Case "_SavedGames_"
+$Savegame_dir = $Env_SavedGames & "\" & $ini_Savegame_subdir
+Case "UserProfile"
 $Savegame_dir = @UserProfileDir & "\" & $ini_Savegame_subdir
-Case "_GameDir_" Or "GameDir"
+Case "_UserProfile_"
+$Savegame_dir = @UserProfileDir & "\" & $ini_Savegame_subdir
+Case "GameDir"
+$Savegame_dir = @ScriptDir & "\" & $ini_Savegame_subdir
+Case "_GameDir_"
 $Savegame_dir = @ScriptDir & "\" & $ini_Savegame_subdir
 EndSwitch
 $Ini_kill_process = IniRead($Ini, "process", "end_process", "")
@@ -583,7 +599,7 @@ Func _1st_run()
 _Zip_UnzipAll(@ScriptDir & "\_1st_run.zip", @ScriptDir & "\_1st_run")
 Local $ini_1stRun_copy_from[1], $ini_1stRun_copy_to[1], $ini_1stRun_open_file[1], $ini_1stRun_file_cmd[1]
 For $i = 1 To 9
-_ArrayAdd($ini_1stRun_copy_from, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "copy", "copy_from" & $i, ""))
+_ArrayAdd($ini_1stRun_copy_from, IniRead(@ScriptDir & "\_1st_run\" & $_1st_run_ini, "copy", "copy_from" & $i, ""))
 If $ini_1stRun_copy_from[$i] <> "" Then
 Switch StringLeft($ini_1stRun_copy_from[$i], 8)
 Case "_SaveDir"
@@ -608,7 +624,7 @@ Case Else
 $ini_1stRun_copy_from[$i] = @ScriptDir & "\_1st_run\" & $ini_1stRun_copy_from[$i]
 EndSwitch
 EndIf
-_ArrayAdd($ini_1stRun_copy_to, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "copy", "copy_to" & $i, ""))
+_ArrayAdd($ini_1stRun_copy_to, IniRead(@ScriptDir & "\_1st_run\" & $_1st_run_ini, "copy", "copy_to" & $i, ""))
 If $ini_1stRun_copy_to[$i] <> "" Then
 Switch StringLeft($ini_1stRun_copy_to[$i], 8)
 Case "_SaveDir"
@@ -644,7 +660,7 @@ DirCopy($ini_1stRun_copy_from[$i], $ini_1stRun_copy_to[$i], 1)
 EndIf
 Next
 For $j = 1 To 9
-_ArrayAdd($ini_1stRun_open_file, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "open", "open_file" & $j, ""))
+_ArrayAdd($ini_1stRun_open_file, IniRead(@ScriptDir & "\_1st_run\" & $_1st_run_ini, "open", "open_file" & $j, ""))
 If $ini_1stRun_open_file[$j] <> "" Then
 Switch StringLeft($ini_1stRun_open_file[$j], 8)
 Case "_SaveDir"
@@ -669,7 +685,7 @@ Case Else
 $ini_1stRun_open_file[$j] = @ScriptDir & "\_1st_run\" & $ini_1stRun_open_file[$j]
 EndSwitch
 EndIf
-_ArrayAdd($ini_1stRun_file_cmd, IniRead(@ScriptDir & "\_1st_run\_1st_run.ini", "open", "file_cmd" & $j, ""))
+_ArrayAdd($ini_1stRun_file_cmd, IniRead(@ScriptDir & "\_1st_run\" & $_1st_run_ini, "open", "file_cmd" & $j, ""))
 If $ini_1stRun_file_cmd[$j] <> "" Then
 If $CmdLineRaw <> "" Then
 If $CmdLineRaw <> $ini_1stRun_file_cmd[$j] Then

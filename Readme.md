@@ -1,4 +1,4 @@
-### UniGame Launcher v1.5.0
+### UniGame Launcher v1.5.1
 
 Universal launcher for games, to be placed in game folder. I would say it's best to rename it to something like *_Game Name.exe*, so that it's the first file you see there. It includes two versions:
 

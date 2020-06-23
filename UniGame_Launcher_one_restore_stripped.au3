@@ -4,8 +4,8 @@
 #pragma compile(AutoItExecuteAllowed, True)
 #pragma compile(InputBoxRes, True)
 #pragma compile(Stripper, True)
-#pragma compile(FileVersion, 1.1.0.47)
-#pragma compile(ProductVersion, 1.1.0.47)
+#pragma compile(FileVersion, 1.1.5.47)
+#pragma compile(ProductVersion, 1.1.5.47)
 #pragma compile(ProductName, 'UniGame Launcher Restore')
 #pragma compile(FileDescription, 'Restore settings & Repack crack')
 #pragma compile(LegalCopyright, '2019-2020, SalFisher47')
@@ -599,11 +599,16 @@ IniWrite($newIni, "process", "end_process", " " & IniRead($oldIni, "launcher", "
 EndIf
 IniWrite($newIni, "process", "exe_real", " " & IniRead($oldIni, "process", "exe_real", ""))
 If IniRead($oldIni, "savegame", "savegame_dir", "") <> "" Then
-IniWrite($newIni, "Savegame", "savegame_dir", " " & "_" & IniRead($oldIni, "savegame", "savegame_dir" & "_", ""))
-IniWrite($newIni, "Savegame", "savegame_subdir", " " & "_" & IniRead($oldIni, "savegame", "savegame_subdir" & "_", ""))
-ElseIf IniRead($oldIni, "exe", "savegame_dir", "") <> "" Then
-IniWrite($newIni, "Savegame", "savegame_dir", " " & "_" & IniRead($oldIni, "savegame", "savegame_dir" & "_", ""))
-IniWrite($newIni, "Savegame", "savegame_subdir", " " & "_" & IniRead($oldIni, "savegame", "savegame_subdir" & "_", ""))
+If StringLeft(IniRead($oldIni, "savegame", "savegame_dir", ""), 1) == "_" Then
+IniWrite($newIni, "Savegame", "savegame_dir", " " & IniRead($oldIni, "savegame", "savegame_dir", ""))
+IniWrite($newIni, "Savegame", "savegame_subdir", " " & IniRead($oldIni, "savegame", "savegame_subdir", ""))
+Else
+IniWrite($newIni, "Savegame", "savegame_dir", " _" & IniRead($oldIni, "savegame", "savegame_dir", "") & "_")
+IniWrite($newIni, "Savegame", "savegame_subdir", " " & IniRead($oldIni, "savegame", "savegame_subdir", ""))
+EndIf
+Else
+IniWrite($newIni, "Savegame", "savegame_dir", "")
+IniWrite($newIni, "Savegame", "savegame_subdir", "")
 EndIf
 IniWrite($newIni, "firewall", "exe_block_inbound", " " & IniRead($oldIni, "firewall", "exe_block_inbound", ""))
 IniWrite($newIni, "firewall", "exe_block_outbound", " " & IniRead($oldIni, "firewall", "exe_block_outbound", ""))
@@ -613,22 +618,22 @@ IniWrite($newIni, "firewall", "port_open_UDP", " " & IniRead($oldIni, "firewall"
 IniWrite($newIni, "firewall", "port_open_Reset", " " & IniRead($oldIni, "firewall", "port_open_Reset", " 0"))
 IniWrite($newIni, "launcher", "run_admin", " " & IniRead($oldIni, "launcher", "run_admin", " 1"))
 IniWrite($newIni, "launcher", "1st_run", " " & IniRead($oldIni, "launcher", "1st_run", " 0"))
-If IniRead($oldIni, "launcher", "1st_run", " 0") == 1 Then FileCopy(@ScriptDir & "\_1st_run.zip", @ScriptDir & "\_DeleteMe\_crack_update\_1st_run.zip", 8)
+If FileExists(@ScriptDir & "\_1st_run.zip") Then FileCopy(@ScriptDir & "\_1st_run.zip", @ScriptDir & "\_launcher_restore\_crack_update\_1st_run.zip", 8)
 If FileExists($sResH & "\ResourceHacker.exe") Then
-If Not FileExists(@ScriptDir & "\_DeleteMe\_icon_update") Then DirCreate(@ScriptDir & "\_DeleteMe\_icon_update")
-FileInstall("_FileInstall\rh_scripts\rh_extract.ini", @ScriptDir & "\_DeleteMe\_icon_update\_rh_extract.ini", 1)
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_extract.ini", "FILENAMES", "Open", '"' & $oldExe & '"')
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_extract.ini", "FILENAMES", "Save", '')
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_extract.ini", "FILENAMES", "Log", '')
-RunWait($sResH & '\ResourceHacker.exe -script ' & '"' & @ScriptDir & '\_DeleteMe\_icon_update\_rh_extract.ini"')
-FileInstall("_FileInstall\rh_scripts\rh_update.ini", @ScriptDir & "\_DeleteMe\_icon_update\_rh_update.ini", 1)
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_update.ini", "FILENAMES", "Open", '"' & $newExe & '"')
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_update.ini", "FILENAMES", "Save", '"' & $newExe & '"')
-IniWrite(@ScriptDir & "\_DeleteMe\_icon_update\_rh_update.ini", "FILENAMES", "Log", '')
-RunWait($sResH & '\ResourceHacker.exe -script ' & '"' & @ScriptDir & '\_DeleteMe\_icon_update\_rh_update.ini"')
-_DirRemoveContent(@ScriptDir & "\_DeleteMe\_icon_update")
+If Not FileExists(@ScriptDir & "\_launcher_restore\_icon_update") Then DirCreate(@ScriptDir & "\_launcher_restore\_icon_update")
+FileInstall("_FileInstall\rh_scripts\rh_extract.ini", @ScriptDir & "\_launcher_restore\_icon_update\_rh_extract.ini", 1)
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_extract.ini", "FILENAMES", "Open", '"' & $oldExe & '"')
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_extract.ini", "FILENAMES", "Save", '')
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_extract.ini", "FILENAMES", "Log", '')
+RunWait($sResH & '\ResourceHacker.exe -script ' & '"' & @ScriptDir & '\_launcher_restore\_icon_update\_rh_extract.ini"')
+FileInstall("_FileInstall\rh_scripts\rh_update.ini", @ScriptDir & "\_launcher_restore\_icon_update\_rh_update.ini", 1)
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_update.ini", "FILENAMES", "Open", '"' & $newExe & '"')
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_update.ini", "FILENAMES", "Save", '"' & $newExe & '"')
+IniWrite(@ScriptDir & "\_launcher_restore\_icon_update\_rh_update.ini", "FILENAMES", "Log", '')
+RunWait($sResH & '\ResourceHacker.exe -script ' & '"' & @ScriptDir & '\_launcher_restore\_icon_update\_rh_update.ini"')
+_DirRemoveContent(@ScriptDir & "\_launcher_restore\_icon_update")
 Else
-MsgBox(16, "Error", "Resource Hacker is not installed")
+MsgBox(16, "Error", "Can't update icon for '" & $a2[$j] & "'" & @CRLF & "Resource Hacker is not installed")
 EndIf
 FileDelete($oldIni)
 FileDelete($oldExe)
@@ -639,7 +644,7 @@ Next
 For $k = 1 To UBound($a2)-1
 If FileExists($s7Zip & "\7z.exe") Then
 If FileExists(@ScriptDir & "\" & StringTrimRight($a2[$k], 4) & ".7z") Then
-$7zOldDir = @ScriptDir & "\_DeleteMe\_crack_update"
+$7zOldDir = @ScriptDir & "\_launcher_restore\_crack_update"
 $7zList = _7zList(@ScriptDir & "\" & StringTrimRight($a2[$k], 4) & ".7z", 0)
 For $i = 1 To $7zList[0]
 FileCopy(@ScriptDir & "\" & $7zList[$i], $7zOldDir & "\" & $7zList[$i], 9)
@@ -649,13 +654,13 @@ RunWait($s7Zip & '\7z.exe a "..\..\' & StringTrimRight($a2[$k], 4) & '.7z" -r *.
 _DirRemoveContent($7zOldDir)
 EndIf
 Else
-MsgBox(16, "Error", "7-Zip is not installed")
+MsgBox(16, "Error", "Can't repack cracked files to '" & StringTrimRight($a2[$k], 4) & ".7z" & "'" & @CRLF & "7-Zip is not installed")
 EndIf
 Next
 FileDelete(@ScriptDir & "\" & StringTrimRight(@ScriptName, 12) & ".ini")
 FileDelete(@ScriptDir & "\" & StringTrimRight(@ScriptName, 12) & ".exe")
-_DirRemoveContent(@ScriptDir & "\_DeleteMe")
-DirRemove(@ScriptDir & "\_DeleteMe")
+_DirRemoveContent(@ScriptDir & "\_launcher_restore")
+DirRemove(@ScriptDir & "\_launcher_restore")
 ShellExecute(@ComSpec, ' /c TimeOut 1 & Del /F "' & @ScriptFullPath & '"', @TempDir, "", @SW_HIDE)
 Func _DirRemoveContent($f_dir)
 $f_dir_FILES = _FileListToArray($f_dir, "*", 1)
